@@ -28,6 +28,7 @@ class App
   end
 
   CONFIG = find_base(:config)
+  SCHEMA = CONFIG + 'schema'
   DB     = find_base(:db)
   KADAI  = DB + 'kadai'
   BUILD  = find_base(:build)
@@ -35,15 +36,17 @@ class App
   SCRIPT = find_base(:script)
 
   FILES = {
-    :master      => CONFIG['master.yml'],
-    :local       => CONFIG['local.yml'],
-    :scheme      => CONFIG['scheme.yml'],
-    :template    => CONFIG['template.yml'],
-    :data        => DB['data.yml'],
-    :log         => 'log.yml',
-    :build       => TESTER['build.rb'],
-    :sandbox     => TESTER['test.rb'],
-    :test_script => SCRIPT['test'],
+    :master          => CONFIG['master.yml'],
+    :master_schema   => SCHEMA['master.yml'],
+    :local           => CONFIG['local.yml'],
+    :local_schema    => SCHEMA['local.yml'],
+    :scheme          => CONFIG['scheme.yml'],
+    :template        => CONFIG['template.yml'],
+    :data            => DB['data.yml'],
+    :log             => 'log.yml',
+    :build           => TESTER['build.rb'],
+    :sandbox         => TESTER['test.rb'],
+    :test_script     => SCRIPT['test'],
   }
 
   LOGGER_LEVEL = {
@@ -54,8 +57,6 @@ class App
     "DEBUG" => Logger::DEBUG,
   }
 
-  attr_accessor :logger
-
   def initialize(remote_user=nil)
     @remote_user = remote_user
     @files = {}
@@ -64,8 +65,7 @@ class App
     @users = nil
 
     # config を app から分離したときは logger も分離すること
-    @logger = Logger.new(conf[:logger, :path])
-    @logger.level = LOGGER_LEVEL[conf[:logger, :level]]
+    @logger = nil
   end
 
   def file(name)
@@ -76,10 +76,31 @@ class App
     return @files[name]
   end
 
+  def logger()
+    unless @logger
+      conf
+    end
+    return @logger
+  end
+
   def conf()
     unless @conf
+      require 'kwalify'
       require 'conf'
       @conf = Conf.new(file(:master), (file(:local) rescue nil))
+      @logger = Logger.new(@conf[:logger, :path])
+      @logger.level = LOGGER_LEVEL[@conf[:logger, :level]]
+      [:master].each do |s|
+        schema = file((s.to_s + "_schema").intern)
+        errors = Kwalify::MetaValidator.instance.validate(schema)
+        for e in errors
+          logger.error("#{e.linenum}:#{e.column} [#{e.path}] #{e.message}")
+        end if errors && !errors.empty?
+        errors = Kwalify::Validator.new(schema).validate(file(s))
+        for e in errors
+          logger.error("#{e.linenum}:#{e.column} [#{e.path}] #{e.message}")
+        end if errors && !errors.empty?
+      end
     end
     return @conf
   end
