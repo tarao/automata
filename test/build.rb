@@ -28,23 +28,17 @@ dir[:target] = dir[:test] + 'src'
 dir[:build]  = App::BUILD
 
 files = {
-  :log    => dir[:user][App::FILES[:log]],
-  :master => App::FILES[:master],
-  :local  => App::FILES[:local],
+  :log    => dir[:user] + App::FILES[:log],
 }
 
 yml = {}
 files.each{|name, file| yml[name] = YAML.load_file(file)||{} rescue {} }
 
-master = App::Conf.new(yml[:master])
-local = App::Conf.new(yml[:local])
-
 conf = {}
-[ :build, :test ].each do |k|
+[:build, :test].each do |k|
   conf[k] = {}
-  [ :default, report_id ].each do |l|
-    ks = [ :check, l, k ]
-    conf[k].merge!((master[*ks]||{}).to_hash.merge((local[*ks]||{}).to_hash))
+  [:default, report_id].each do |l|
+    conf[k].merge!((App.new.conf[:check, l, k] || {}).to_hash)
   end
 end
 
@@ -88,7 +82,7 @@ Dir.each_leaf(dir[:target].to_s, File::FNM_DOTMATCH) do |f|
 end
 
 # make input file
-input = dir[:test][conf[:test]['input']]
+input = dir[:test] + conf[:test]['input']
 FileUtils.rm(input) if File.exist?(input)
 open(input, 'w'){|io| exes.each{|x| io.puts(x)}}
 
