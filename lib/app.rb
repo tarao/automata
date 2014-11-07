@@ -1,11 +1,10 @@
+require 'logger'
 require 'pathname'
 require 'strscan'
 require 'yaml'
 
 require 'rubygems'
 require 'bundler/setup'
-
-require 'logger'
 
 require 'clone'
 require 'conf'
@@ -52,6 +51,9 @@ class App
     "DEBUG" => Logger::DEBUG,
   }
 
+  # 指定したユーザを実行ユーザとしてアプリケーションの初期化する．
+  # ユーザを指定しない場合は環境変数から自動的にユーザを設定する．
+  # @param [string] remote_user 実行ユーザ
   def initialize(remote_user=nil)
     @remote_user = remote_user
   end
@@ -214,8 +216,8 @@ class App
     checkers = {
       :size => proc{ StringScanner.new(`du -sk "#{dir}"`).scan(/\d+/).to_i },
       :entries => proc do
-        if (dir+App::FILES[:log]).exist?
-          Log.new(dir[App::FILES[:log]]).size
+        if (dir + App::FILES[:log]).exist?
+          Log.new(dir + App::FILES[:log]).size
         else
           Pathname.new(dir).children.select(&:directory?).size
         end

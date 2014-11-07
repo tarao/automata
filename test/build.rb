@@ -82,7 +82,7 @@ Dir.each_leaf(dir[:target].to_s, File::FNM_DOTMATCH) do |f|
 end
 
 # make input file
-input = dir[:test] + conf[:test] + 'input'
+input = dir[:test] + conf[:test]['input']
 FileUtils.rm(input) if File.exist?(input)
 open(input, 'w'){|io| exes.each{|x| io.puts(x)}}
 
