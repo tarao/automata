@@ -1,30 +1,25 @@
-require 'yaml'
-require 'time'
 require 'pathname'
 require 'strscan'
+require 'yaml'
 
 require 'rubygems'
 require 'bundler/setup'
 
-require 'clone'
-require 'conf'
-require 'log'
-require 'store'
-
 require 'logger'
 
-class Pathname
-  def [](*paths)
-    loc = self
-    loc = loc + paths.shift() while paths.length > 0
-    return loc.to_s
-  end
-end
+require 'clone'
+require 'conf'
+require 'kwalify'
+require 'log'
+require 'store'
+require 'user'
 
+# アプリケーションの設定管理とユーザ情報の管理を行う
 class App
+
   def self.find_base(dir)
     e = Pathname($0).expand_path.parent.to_enum(:ascend)
-    return e.map{|x| x+dir.to_s }.find{|x| x.directory?}
+    return e.map{|x| x + dir.to_s }.find{|x| x.directory? }
   end
 
   CONFIG = find_base(:config)
@@ -36,17 +31,17 @@ class App
   SCRIPT = find_base(:script)
 
   FILES = {
-    :master          => CONFIG['master.yml'],
-    :master_schema   => SCHEMA['master.yml'],
-    :local           => CONFIG['local.yml'],
-    :local_schema    => SCHEMA['local.yml'],
-    :scheme          => CONFIG['scheme.yml'],
-    :template        => CONFIG['template.yml'],
-    :data            => DB['data.yml'],
+    :master          => CONFIG + 'master.yml',
+    :master_schema   => SCHEMA + 'master.yml',
+    :local           => CONFIG + 'local.yml',
+    :local_schema    => SCHEMA + 'local.yml',
+    :scheme          => CONFIG + 'scheme.yml',
+    :template        => CONFIG + 'template.yml',
+    :data            => DB + 'data.yml',
     :log             => 'log.yml',
-    :build           => TESTER['build.rb'],
-    :sandbox         => TESTER['test.rb'],
-    :test_script     => SCRIPT['test'],
+    :build           => TESTER + 'build.rb',
+    :sandbox         => TESTER + 'test.rb',
+    :test_script     => SCRIPT + 'test',
   }
 
   LOGGER_LEVEL = {
@@ -59,34 +54,30 @@ class App
 
   def initialize(remote_user=nil)
     @remote_user = remote_user
-    @files = {}
-    @conf = nil
-    @user = nil
-    @users = nil
-
-    # config を app から分離したときは logger も分離すること
-    @logger = nil
   end
 
   def file(name)
-    open_mode = RUBY_VERSION < '1.9.0' ? 'r' : 'r:utf-8'
-    File.open(FILES[name], open_mode) do |f|
-      @files[name] = YAML.load(f) unless @files[name]
+    @files ||= Hash.new do |h, k|
+      open_mode = RUBY_VERSION < '1.9.0' ? 'r' : 'r:utf-8'
+      File.open(FILES[name], open_mode) do |f|
+        h[k] = YAML.load(f)
+      end
     end
     return @files[name]
   end
 
-  def logger()
+  # @todo config を app から分離したときは logger も分離すること
+  def logger
     unless @logger
       conf
     end
     return @logger
   end
 
-  def conf()
+  # アプリケーション設定を返す．
+  # @return [Conf] アプリケーション設定
+  def conf
     unless @conf
-      require 'kwalify'
-      require 'conf'
       @conf = Conf.new(file(:master), (file(:local) rescue nil))
       @logger = Logger.new(@conf[:logger, :path])
       @logger.level = LOGGER_LEVEL[@conf[:logger, :level]]
@@ -105,26 +96,40 @@ class App
     return @conf
   end
 
-  def template()
-    unless @template
-      require 'conf'
-      @template = Conf.new(file(:template), (file(:local) rescue nil))
-    end
+  # 出力用のテンプレートを返す．
+  # @return [Conf] 出力用テンプレート設定
+  def template
+    @template ||= Conf.new(file(:template), (file(:local) rescue nil))
     return @template
   end
 
-  def user(u=nil)
-    @user = u || conf[:user] || @remote_user || ENV['USER'] unless @user
+  # 実行ユーザのログイン名を返す．
+  # @return [string] 実行ユーザのログイン名
+  def user
+    @user ||= conf[:user] || @remote_user || ENV['USER']
     return @user
   end
 
-  def su?(u=nil) return conf[:su].include?(u||user) end
+  # 指定したユーザが管理権限を持つか否かを判定する．
+  # ユーザ指定がなければ実行ユーザを判定する．
+  # @param [string] u 判定するユーザのログイン名
+  # @return [bool] 管理者権限を持てばtrue，そうでなければfalse
+  def su?(u=nil)
+    conf[:su].include?(u || user)
+  end
 
-  def user_dir(r) return KADAI + r + user end
+  # ユーザディレクトリを返す．
+  # @param [string] r 課題名
+  # @return [Pathname] ユーザディレクトリへの絶対パス
+  def user_dir(r)
+    # @todo 'KADAI + user + r' か 'KADAI + user' にすべきでは？
+    KADAI + r + user
+  end
 
-  def users()
+  # 実行ユーザから見えるユーザ情報の一覧を返す．
+  # @return [array<User>] マスク処理のされたユーザ情報一覧
+  def users
     unless @users
-      require 'user'
       user_store = Store::YAML.new(FILES[:data])
       user_store.ro.transaction do |store|
         @users = (store['data'] || []).map{|u| User.new(u)}
@@ -138,6 +143,11 @@ class App
     return @users
   end
 
+  # ユーザを追加する．
+  # @param [string] name ユーザ名
+  # @param [string] ruby ふりがな
+  # @param [string] login ログイン名
+  # @param [string] email メールアドレス
   def add_user(name, ruby, login, email)
     user_store = Store::YAML.new(FILES[:data])
     user_store.transaction do |store|
@@ -148,6 +158,9 @@ class App
     end
   end
 
+  # ユーザトークンに対応するログイン名を返す．
+  # @param [string] token トークン
+  # @return [string] ログイン名
   def user_from_token(token)
     return users.inject(nil) do |r, u|
       (u.token == token || u.real_login == token) ? u.real_login : r
@@ -192,6 +205,9 @@ class App
     end
   end
 
+  # 指定ディレクトリのディスク使用量をチェックする．
+  # @param [string, Pathname] チェックするディレクトリ
+  # @return [bool] 設定上限以内であればtrue，そうでなければfalse
   def check_disk_usage(dir)
     dir = Pathname.new(dir.to_s) unless dir.is_a?(Pathname)
 
@@ -213,4 +229,5 @@ class App
 
     return true
   end
+
 end
