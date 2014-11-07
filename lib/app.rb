@@ -59,7 +59,7 @@ class App
   def file(name)
     @files ||= Hash.new do |h, k|
       open_mode = RUBY_VERSION < '1.9.0' ? 'r' : 'r:utf-8'
-      File.open(FILES[name], open_mode) do |f|
+      File.open(FILES[k], open_mode) do |f|
         h[k] = YAML.load(f)
       end
     end
@@ -85,11 +85,11 @@ class App
         schema = file((s.to_s + "_schema").intern)
         errors = Kwalify::MetaValidator.instance.validate(schema)
         for e in errors
-          logger.error("#{e.linenum}:#{e.column} [#{e.path}] #{e.message}")
+          @logger.error("schema: #{e.linenum}:#{e.column} [#{e.path}] #{e.message}")
         end if errors && !errors.empty?
         errors = Kwalify::Validator.new(schema).validate(file(s))
         for e in errors
-          logger.error("#{e.linenum}:#{e.column} [#{e.path}] #{e.message}")
+          @logger.error("conf: #{e.linenum}:#{e.column} [#{e.path}] #{e.message}")
         end if errors && !errors.empty?
       end
     end
@@ -178,7 +178,7 @@ class App
     optional << :log if option[:log]
 
     if (file(:scheme)['scheme'].find{|r| r['id']==id} || {})['type'] == 'post'
-      fname = KADAI[id, u, FILES[:log]]
+      fname = KADAI + id + u + FILES[:log]
       return nil unless File.exist?(fname)
       yaml = Log.new(fname, true).latest(:data)
       # add timestamp of initial submit
