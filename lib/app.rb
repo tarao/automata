@@ -21,6 +21,7 @@ class Pathname
   end
 end
 
+# アプリケーションの設定管理とユーザ情報の管理を行う
 class App
   def self.find_base(dir)
     e = Pathname($0).expand_path.parent.to_enum(:ascend)
@@ -56,6 +57,9 @@ class App
 
   attr_accessor :logger
 
+  # 指定したユーザを実行ユーザとしてアプリケーションの初期化する．
+  # ユーザを指定しない場合は環境変数から自動的にユーザを設定する．
+  # @param [String] remote_user 実行ユーザ
   def initialize(remote_user=nil)
     @remote_user = remote_user
     @files = {}
@@ -76,6 +80,8 @@ class App
     return @files[name]
   end
 
+  # アプリケーション設定を返す．
+  # @return [Conf] アプリケーション設定
   def conf()
     unless @conf
       require 'conf'
@@ -84,6 +90,8 @@ class App
     return @conf
   end
 
+  # 出力用のテンプレートを返す．
+  # @return [Conf] 出力用テンプレート設定
   def template()
     unless @template
       require 'conf'
@@ -92,15 +100,27 @@ class App
     return @template
   end
 
+  # 実行ユーザのログイン名を返す．
+  # @param [String] u
+  # @return [String] 実行ユーザのログイン名
   def user(u=nil)
     @user = u || conf[:user] || @remote_user || ENV['USER'] unless @user
     return @user
   end
 
+  # 指定したユーザが管理権限を持つか否かを判定する．
+  # ユーザ指定がなければ実行ユーザを判定する．
+  # @param [String] u 判定するユーザのログイン名
+  # @return [true, false] 管理者権限を持てばtrue，そうでなければfalse
   def su?(u=nil) return conf[:su].include?(u||user) end
 
+  # ユーザディレクトリを返す．
+  # @param [String] r 課題名
+  # @return [Pathname] ユーザディレクトリへの絶対パス
   def user_dir(r) return KADAI + r + user end
 
+  # 実行ユーザから見えるユーザ情報の一覧を返す．
+  # @return [Array<User>] マスク処理のされたユーザ情報一覧
   def users()
     unless @users
       require 'user'
@@ -117,6 +137,11 @@ class App
     return @users
   end
 
+  # ユーザを追加する．
+  # @param [String] name ユーザ名
+  # @param [String] ruby ふりがな
+  # @param [String] login ログイン名
+  # @param [String] email メールアドレス
   def add_user(name, ruby, login, email)
     user_store = Store::YAML.new(FILES[:data])
     user_store.transaction do |store|
@@ -127,6 +152,9 @@ class App
     end
   end
 
+  # ユーザトークンに対応するログイン名を返す．
+  # @param [String] token トークン
+  # @return [String] ログイン名
   def user_from_token(token)
     return users.inject(nil) do |r, u|
       (u.token == token || u.real_login == token) ? u.real_login : r
@@ -171,6 +199,9 @@ class App
     end
   end
 
+  # 指定ディレクトリのディスク使用量をチェックする．
+  # @param [String, Pathname] チェックするディレクトリ
+  # @return [true, false] 設定上限以内であればtrue，そうでなければfalse
   def check_disk_usage(dir)
     dir = Pathname.new(dir.to_s) unless dir.is_a?(Pathname)
 
