@@ -21,7 +21,7 @@ require 'cgi_helper'
 helper = CGIHelper.new
 app = App.new
 
-temp = app.template.to_hash
+temp = app.conf[:template]
 
 type = helper.params[:type.to_s]
 temp = temp.merge(temp[type[0]]||{}) unless type.empty?
