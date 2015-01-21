@@ -83,7 +83,6 @@ mapping:
                 required: yes
               "run":
                 type: str
-                required: yes
           "build":
             type: map
             required: yes
