@@ -1,7 +1,6 @@
 var React = require('react');
 var $ = require('jquery');
 var api = require('../api');
-var ReactZeroClipboard = require('react-zeroclipboard')
 
 var FileEntry = (function() {
     var humanReadableSize = function(size) {
@@ -61,6 +60,14 @@ var Breadcrum = (function() {
             return FileView.rawPath(this.props.token, this.props.report, path);
         },
 
+        selectCode: function() {
+            var range = document.createRange();
+            range.selectNodeContents($('.file .content')[0]);
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        },
+
         render: function() {
             var p = this.props;
             var list = descend(p.path).map(function(p) {
@@ -73,9 +80,7 @@ var Breadcrum = (function() {
             var toolButton = last.type === 'dir' ? null :
                 <li className="toolbutton">
                     <a href={this.rawPath(last.path)}>⏎ 直接開く</a>
-                    <ReactZeroClipboard text={this.props.rawContent}>
-                        <button>Copy</button>
-                    </ReactZeroClipboard>
+                    <button onClick={this.selectCode}>select code</button>
                 </li>;
 
             var self = this;
@@ -193,14 +198,14 @@ var FileView = (function() {
     };
 
     return React.createClass({
-        browseAPI: function(path, type, success, error) {
+        browseAPI: function(path, success, error) {
             api.get({
                 api: 'browse',
                 data: {
                     user:   this.props.token,
                     report: this.props.report,
                     path:   path,
-                    type:   type,
+                    type:   'highlight',
                 }
             }).done(function(res) { success(res); }).
                fail(error);
@@ -209,18 +214,9 @@ var FileView = (function() {
         open: function(path, type) {
             if (type === 'bin' && path.indexOf('.class') < 0) return;
 
-            if (type !== 'dir') {
-                this.browseAPI(path, 'raw', function(res) {
-                    var rawContent = res;
-                    this.setState({
-                        rawContent: rawContent
-                    });
-                }.bind(this));
-            }
-
-            this.browseAPI(path, 'highlight', function(res) {
+            this.browseAPI(path, function(res) {
                 if (type === 'dir') {
-                    this.setState({
+                    this.replaceState({
                         path: path,
                         type: 'dir',
                         entries: res
@@ -235,14 +231,14 @@ var FileView = (function() {
                     }
                     applyStyleFromSource(res);
 
-                    this.setState({
+                    this.replaceState({
                         path: path,
                         type: type,
                         content: pre.innerHTML+''
                     });
                 }
             }.bind(this), function() {
-                this.setState({
+                this.replaceState({
                     path:  path,
                     type:  type,
                     error: true
@@ -269,8 +265,7 @@ var FileView = (function() {
                                   report={p.report}
                                   path={s.path}
                                   type={s.type}
-                                  open={open}
-                                  rawContent={s.rawContent}/>;
+                                  open={open}/>;
             }.bind(this);
 
             var render = s.error ?
