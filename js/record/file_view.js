@@ -1,6 +1,7 @@
 var React = require('react');
 var $ = require('jquery');
 var api = require('../api');
+var ReactZeroClipboard = require('react-zeroclipboard')
 
 var FileEntry = (function() {
     var humanReadableSize = function(size) {
@@ -55,6 +56,18 @@ var Breadcrum = (function() {
         }, [ [], [] ])[0];
     };
 
+    var hasFlash = (function() {
+        try {
+            var fo = new ActiveXObject('ShockwaveFlash.ShockwaveFlash');
+            if (fo) return true;
+        } catch (e) {
+            if (navigator.mimeTypes ["application/x-shockwave-flash"] !== undefined) {
+                return true;
+            }
+        }
+        return false;
+    }());
+
     return React.createClass({
         rawPath: function(path) {
             return FileView.rawPath(this.props.token, this.props.report, path);
@@ -77,10 +90,16 @@ var Breadcrum = (function() {
             last = list[list.length-1];
             last.type = p.type;
 
+            var copyButton = hasFlash ?
+                <ReactZeroClipboard text={this.props.rawContent}>
+                    <button>Copy</button>
+                </ReactZeroClipboard> :
+                <button onClick={this.selectCode}>select code</button>;
+
             var toolButton = last.type === 'dir' ? null :
                 <li className="toolbutton">
                     <a href={this.rawPath(last.path)}>⏎ 直接開く</a>
-                    <button onClick={this.selectCode}>select code</button>
+                    {copyButton}
                 </li>;
 
             var self = this;
@@ -198,14 +217,14 @@ var FileView = (function() {
     };
 
     return React.createClass({
-        browseAPI: function(path, success, error) {
+        browseAPI: function(path, type, success, error) {
             api.get({
                 api: 'browse',
                 data: {
                     user:   this.props.token,
                     report: this.props.report,
                     path:   path,
-                    type:   'highlight',
+                    type:   type,
                 }
             }).done(function(res) { success(res); }).
                fail(error);
@@ -214,9 +233,16 @@ var FileView = (function() {
         open: function(path, type) {
             if (type === 'bin' && path.indexOf('.class') < 0) return;
 
-            this.browseAPI(path, function(res) {
+            if (type !== 'dir') {
+                this.browseAPI(path, 'raw', function(res) {
+                    var rawContent = res;
+                    this.setState({ rawContent: rawContent });
+                }.bind(this));
+            }
+
+            this.browseAPI(path, 'highlight', function(res) {
                 if (type === 'dir') {
-                    this.replaceState({
+                    this.setState({
                         path: path,
                         type: 'dir',
                         entries: res
@@ -231,14 +257,14 @@ var FileView = (function() {
                     }
                     applyStyleFromSource(res);
 
-                    this.replaceState({
+                    this.setState({
                         path: path,
                         type: type,
                         content: pre.innerHTML+''
                     });
                 }
             }.bind(this), function() {
-                this.replaceState({
+                this.setState({
                     path:  path,
                     type:  type,
                     error: true
@@ -265,7 +291,8 @@ var FileView = (function() {
                                   report={p.report}
                                   path={s.path}
                                   type={s.type}
-                                  open={open}/>;
+                                  open={open}
+                                  rawContent={s.rawContent}/>;
             }.bind(this);
 
             var render = s.error ?
