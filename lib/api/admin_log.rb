@@ -30,7 +30,7 @@ module API
 
       # resolve real login name in case user id is a token
       user = app.user_from_token(user)
-      return helper.bad_request unless user
+      return helper.forbidden unless user
 
       # report ID must be specified
       report_id = helper.params['report']

@@ -24,7 +24,7 @@ module API
 
       token = helper.params['user'] || ''
       user = app.user_from_token(token)
-      return helper.bad_request("Unknown user: #{token}") if user.nil?
+      return helper.forbidden unless user
 
       method = helper.params['method'] || ''
       case method.intern
