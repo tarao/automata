@@ -2,6 +2,7 @@ var React = require('react');
 var $ = require('jquery');
 var api = require('../api');
 var ReactZeroClipboard = require('react-zeroclipboard')
+var compatibility = require('../compatibility')
 
 var FileEntry = (function() {
     var humanReadableSize = function(size) {
@@ -56,18 +57,6 @@ var Breadcrum = (function() {
         }, [ [], [] ])[0];
     };
 
-    var hasFlash = (function() {
-        try {
-            var fo = new ActiveXObject('ShockwaveFlash.ShockwaveFlash');
-            if (fo) return true;
-        } catch (e) {
-            if (navigator.mimeTypes ["application/x-shockwave-flash"] !== undefined) {
-                return true;
-            }
-        }
-        return false;
-    }());
-
     return React.createClass({
         rawPath: function(path) {
             return FileView.rawPath(this.props.token, this.props.report, path);
@@ -90,7 +79,7 @@ var Breadcrum = (function() {
             last = list[list.length-1];
             last.type = p.type;
 
-            var copyButton = hasFlash ?
+            var copyButton = compatibility.hasFlash ?
                 <ReactZeroClipboard text={this.props.rawContent}>
                     <button>Copy</button>
                 </ReactZeroClipboard> :
