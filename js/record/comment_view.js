@@ -276,11 +276,11 @@ var CommentView = React.createClass({
                         id: last_id
                     }
                 }).done(function() {
-                    this.state.comments.forEach(function(comment) {
+                    result.forEach(function(comment) {
                         if (comment.id <= last_id) comment.readFlag = true;
                     });
                     if (this.isMounted()) {
-                        this.setState({ comments: this.state.comments });
+                        this.setState({ comments: result });
                     }
                     this.updateNews();
                 }.bind(this));
