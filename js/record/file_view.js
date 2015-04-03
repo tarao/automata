@@ -2,6 +2,7 @@ var React = require('react');
 var $ = require('jquery');
 var api = require('../api');
 var ReactZeroClipboard = require('react-zeroclipboard')
+var compatibility = require('../compatibility')
 
 var FileEntry = (function() {
     var humanReadableSize = function(size) {
@@ -61,6 +62,14 @@ var Breadcrum = (function() {
             return FileView.rawPath(this.props.token, this.props.report, path);
         },
 
+        selectCode: function() {
+            var range = document.createRange();
+            range.selectNodeContents($('.file .content')[0]);
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        },
+
         render: function() {
             var p = this.props;
             var list = descend(p.path).map(function(p) {
@@ -70,12 +79,16 @@ var Breadcrum = (function() {
             last = list[list.length-1];
             last.type = p.type;
 
+            var copyButton = compatibility.hasFlash ?
+                <ReactZeroClipboard text={this.props.rawContent}>
+                    <button>Copy</button>
+                </ReactZeroClipboard> :
+                <button onClick={this.selectCode}>select code</button>;
+
             var toolButton = last.type === 'dir' ? null :
                 <li className="toolbutton">
                     <a href={this.rawPath(last.path)}>⏎ 直接開く</a>
-                    <ReactZeroClipboard text={this.props.rawContent}>
-                        <button>Copy</button>
-                    </ReactZeroClipboard>
+                    {copyButton}
                 </li>;
 
             var self = this;
@@ -212,9 +225,7 @@ var FileView = (function() {
             if (type !== 'dir') {
                 this.browseAPI(path, 'raw', function(res) {
                     var rawContent = res;
-                    this.setState({
-                        rawContent: rawContent
-                    });
+                    this.setState({ rawContent: rawContent });
                 }.bind(this));
             }
 
