@@ -36,7 +36,7 @@ cmd[:build] = "#{cmd[:build]} > /dev/null 2>#{helper.dir[:user] + 'build_fatal.l
 
 # ../test/test.rb report_id user post
 cmd[:test] = "#{App::FILES[:sandbox]} '#{report_id}' '#{user}' '#{time}'"
-cmd[:test] = "#{cmd[:test]} > /dev/null 2>&1 &" # do not wait
+cmd[:test] = "#{cmd[:test]} > /dev/null 2>&1"
 
 begin
   build = nil
