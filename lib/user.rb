@@ -12,33 +12,37 @@ require_relative 'conf'
 require_relative 'app/logger_ext'
 
 class User
-
-  # Return a user whose token or login is t_or_l
-  # @param [String] token or login
+  # Retrieve a user by token or login.
+  # FIXME: see User.from_login
+  # @param [String] t_or_l token or login
+  # @return [User] a user whose token or login is t_or_l
   def self.from_token_or_login(t_or_l)
-    (self.all_users.select {|u| u.token == t_or_l || u.real_login == t_or_l})[0]
+    (all_users.select { |u| u.token == t_or_l || u.real_login == t_or_l })[0]
   end
 
-  # Return a user whose login is login
+  # Retrieve a user by login.
+  # FIXME: I think the name from_login is not good; something like find_by_login
+  # are preferable.
   # @param [String] login
+  # @return [User] a user whose login is login
   def self.from_login(login)
-    (self.all_users.select {|u| u.real_login == login})[0]
+    (all_users.select { |u| u.real_login == login })[0]
   end
 
   # Add a user to the database.
   # @param [Hash{String => String}] info contains name, ruby, login, email, and
-  # assigned
+  #   assigned
   # @example
-  #   User::add({
+  #   User.add(
   #     'name'      => 'Alice',
   #     'ruby'      => 'Alice',
   #     'login'     => 'alice',
   #     'email'     => 'alice@wonderland.net',
   #     'assigned'  => 'Bob'
-  #   })
-  # @return [Bool] whether addition of an user succeeds or nor
+  #   )
+  # @return [Bool] whether addition of an user succeeds or not
   def self.add(info)
-    return false if self.all_users.any? do |u|
+    return false if all_users.any? do |u|
       u.email == info['email'] || u.real_login == info['login']
     end
 
@@ -47,17 +51,21 @@ class User
       store['data'] = (store['data'] || []) + [info]
     end
 
-    self.set_passwd(info['login'], info['passwd']) unless info['passwd'].nil?
+    set_passwd(info['login'], info['passwd']) unless info['passwd'].nil?
 
     App::Logger.new.info("User added: #{info}")
 
     return true
   end
 
-  # Modify user information
-  # @param [User] modified user
-  # @param [Hash{String => String}] info contains name, ruby, login, email, or
-  # assigned; see also self.add.
+  # Modify user information.
+  # @param [User] user modified user
+  # @param [Hash{String => String}] info contains name, ruby, login, email
+  #   assigned, or passwd; see also User.add
+  # @example
+  #   alice = User.from_login('alice')
+  #   User.modify(alice, 'email' => 'alice@alice.com', 'assigned' => 'Carol')
+  # @return [void]
   def self.modify(user, info)
     login = user.real_login
     store.transaction do |store|
@@ -74,16 +82,20 @@ class User
       store['data'] = users
     end
 
-    self.set_passwd(login, info['passwd']) unless info['passwd'].nil?
+    set_passwd(login, info['passwd']) unless info['passwd'].nil?
   end
 
-  # Delete user information
-  # @param [User] deleted user
+  # Delete user information from the database.  This method also removes the
+  # user's authentication information from .htdigest.  Reports are backed up.
+  # @param [User] user deleted user
+  # @raise [RuntimeError] if the backup dirctory alredy exists
+  # @raise [RuntimeError] if the user's login is invalid
+  # @return [void]
   def self.delete(user)
     login = user.real_login
     backup_dir = SysPath::BACKUP + Time.new.iso8601
-    raise RuntimeError, '頻度が高すぎるためリクエストを拒否しました' if File.exist?(backup_dir)
-    raise RuntimeError, 'Invalid delete id' if login.nil? || login.empty?
+    fail '頻度が高すぎるためリクエストを拒否しました' if File.exist?(backup_dir)
+    fail 'Invalid delete id' if login.nil? || login.empty?
     FileUtils.mkdir_p(backup_dir)
     # remove and backup user directories
     Pathname.glob(SysPath::KADAI + '*').each do |path|
@@ -96,43 +108,119 @@ class User
     end
 
     # remove user data
-    store.transaction {|store|
+    store.transaction do |store|
       users = (store['data'] || [])
-      users.reject! {|u| u['login'] == login}
+      users.reject! { |u| u['login'] == login }
       store['data'] = users
-    }
+    end
 
     # remove user password
-    self.delete_passwd(login)
+    delete_passwd(login)
 
     App::Logger.new.info("User deleted: #{login}")
   end
 
-  # Make a token for a user login
-  # @param [String] encoded login
+  # Make a token for a user login.  Tokens are used to hide users' real login.
+  # @param [String] str encoded login
+  # @return [String] the token generated from str
   def self.make_token(str)
-    return 'id' + Digest::MD5.hexdigest(str)
+    'id' + Digest::MD5.hexdigest(str)
   end
 
-  # Return all users
-  # @return [Array(User)] saved users
+  # Return all users stored in the database.
+  # @return [Array<User>] saved users
   def self.all_users
-    self.store.ro.transaction do |store|
-      (store['data'] || []).map do |u|
-        self.new(u)
-      end
+    store.ro.transaction do |store|
+      (store['data'] || []).map { |u| new(u) }
     end
   end
 
-  private
+  attr_reader :report
 
+  # @param [Hash{String => String}] user contains name, ruby, email, login, and
+  #   assigned
+  def initialize(user)
+    @user = user
+    @report = {}
+  end
+
+  # Returns a real_login, not a token.
+  # @return [String]
+  def real_login
+    @user['login']
+  end
+
+  # The user's token (the hash value of the login)
+  # @return [String]
+  def token
+    self.class.make_token(real_login)
+  end
+
+  # Returns a real_login, not a token.  In case of
+  # conf[:master, :record, :show_login] is false, App.visible_users overwrites
+  # this method.
+  # @return [String]
+  def login
+    real_login
+  end
+
+  # The user's name.
+  # @return [String]
+  def name
+    @user['name']
+  end
+
+  # The user's ruby of the name.
+  # @return [String]
+  def ruby
+    @user['ruby']
+  end
+
+  # The user's email.
+  # @return [String]
+  def email
+    @user['email']
+  end
+
+  # TA assigned to the user.
+  # @return [String] TA's login
+  def assigned
+    @user['assigned']
+  end
+
+  # Update the user's report status. (FIXME: Is this true?)
+  # FIXME: I think that this syntax is not suitable for this method.
+  # @param [String] exercise exercise id
+  # @param [Report Object] report report object
+  # @return [void]
+  def []=(exercise, report)
+    @report[exercise] = report if report
+  end
+
+  # The hash of the user's information
+  # @return [Hash{String => String}]
+  def to_hash
+    hash = {
+      'login'    => login,
+      'token'    => token,
+      'name'     => name,
+      'ruby'     => ruby,
+      'email'    => email,
+      'assigned' => assigned,
+    }
+    hash['report'] = {} unless report.empty?
+    report.each { |k, v| hash['report'][k] = v.to_hash }
+    hash
+  end
+
+  # @return [Store] the database that stores user information
   def self.store
     Store::YAML.new(SysPath::FILES[:data])
   end
 
   # Set a password for a user.
-  # @param [String] real_login
-  # @param [String] passwd
+  # @param [String] login real_login of a user
+  # @param [String] passwd new password
   def self.set_passwd(login, passwd)
     conf = Conf.new
     htdigest = conf[:master, :authn, :htdigest]
@@ -143,8 +231,8 @@ class User
     htd.flush
   end
 
-  # Set a password for a user.
-  # @param [String] real_login
+  # Delete a password for a user.
+  # @param [String] login real_login of a user
   def self.delete_passwd(login)
     conf = Conf.new
     htdigest = conf[:master, :authn, :htdigest]
@@ -155,34 +243,5 @@ class User
     htd.flush
   end
 
-  public
-
-  attr_reader :report
-  def initialize(user)
-    @user = user
-    @report = {}
-  end
-
-  def real_login() return @user['login'] end
-  def token() return self.class.make_token(real_login) end
-  def login() return real_login end
-  def name() return @user['name'] end
-  def ruby() return @user['ruby'] end
-  def email() return @user['email'] end
-  def assigned() return @user['assigned'] end
-  def []=(k, rep) @report[k] = rep if rep end
-
-  def to_hash()
-    hash = {
-      'login'    => login,
-      'token'    => token,
-      'name'     => name,
-      'ruby'     => ruby,
-      'email'    => email,
-      'assigned' => assigned,
-    }
-    hash['report'] = {} unless report.empty?
-    report.each{|k,v| hash['report'][k] = v.to_hash}
-    return hash
-  end
+  private_class_method :store, :set_passwd, :delete_passwd
 end
