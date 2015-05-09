@@ -78,7 +78,7 @@ class App
       yaml['initial_submit'] = Log.new(fname, true).oldest(:data)['id']
       src = Report::Source::Post.new(yaml, optional)
     else
-      yaml = file(:data) rescue {}
+      yaml = YAML.load(Syspath::FILES[:data]) rescue {}
       yaml = yaml['data'] || {}
       yaml = yaml.find{|x| x['login'] == u.real_login} || {}
       yaml = yaml['report'] || {}
