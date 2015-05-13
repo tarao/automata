@@ -3,6 +3,7 @@ class String
     return Array.new(len).map{ self[rand(self.length)].chr }.join
   end
 
+  # Returns a random string
   def self.random(len=128, src=nil)
     src ||=
       [
