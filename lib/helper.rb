@@ -16,6 +16,7 @@ class Helper
     500 => '500 Internal Server Error'
   }
 
+  # @param [Hash] env rack environment
   def initialize(env)
     @env = env
     @req = Rack::Request.new(env)
@@ -24,10 +25,16 @@ class Helper
     @callback = cb
   end
 
+  # Convert the message to JSON and make a response with it
+  # @param [String] message
+  # @return [Response] new rack response
   def json_response(message)
     Response.new([json(message)], 200, json_header)
   end
 
+  # Default JSON header
+  # Content-Type is JavaSctipt when callback exists
+  # othrtwise JSON
   def json_header
     {
       'Content-Type' => @callback ? 'text/javascript' : 'application/json',
@@ -70,7 +77,9 @@ class Helper
     @req.params
   end
 
-  # TODO: explain this method
+  # Return reqest parametar and add a method include
+  # @param [String] key request parameter's key
+  # @return [Object] request parameter with include?
   def optional(key)
     param = params[key].deep_copy
     def param.include?(x)
@@ -87,12 +96,21 @@ class Helper
 
   private
 
+  # Convert data to JSON data
+  # and add function callback if it exists
+  # @param [String] data
+  # @return [String] data converted to JSON
   def json(data)
     data = data.to_json
     data = "#{@callback}(#{data});" if @callback
     return data
   end
 
+  # Make a new instanse of Response and return it
+  # @param [Integer] status
+  # @param [String] message response messege
+  # @param [Hash{String => Object}] header response header
+  # @return [Response]
   def response(status, message = nil, header = {})
     Response.new(message ? [message] : [], status, header)
   end
