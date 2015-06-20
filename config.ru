@@ -17,6 +17,7 @@ require 'lib/api/template'
 require 'lib/api/test_result'
 require 'lib/api/user'
 require 'lib/api/download'
+require 'lib/api/download_all'
 require 'lib/account/reset'
 require 'lib/account/register'
 require 'lib/sandbox/tester'
@@ -81,6 +82,11 @@ map base_path do
             '/api/download.cgi?user=$1&report=$2'
   end
 
+  use Rack::Rewrite do
+    rewrite %r{/download_all/([^/.]+)\.zip$},
+            '/api/download_all.cgi?report=$1'
+  end  
+
   use Rack::Session::Pool,
       key: 'rack.session',
       expire_after: 600 # 10 minutes
@@ -102,6 +108,7 @@ map base_path do
     { pattern: '/api/test_result.cgi', controller: API::TestResult.new },
     { pattern: '/api/user.cgi', controller: API::User.new },
     { pattern: '/api/download.cgi', controller: API::Download.new },
+    { pattern: '/api/download_all.cgi', controller: API::DownloadAll.new },    
   ]
 
   if ENV['WITH_SANDBOX']

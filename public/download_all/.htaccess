@@ -1,0 +1,4 @@
+RewriteEngine on
+RewriteRule ^.*$ %{REQUEST_URI} [C,DPI]
+RewriteRule ^(.*?)/download_all/([^/]+)\.zip$ $1/api/download_all.cgi?report=$2 [L,QSA]
+RewriteRule ^(.*)$ $1 [R=404]
