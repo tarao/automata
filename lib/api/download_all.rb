@@ -19,7 +19,6 @@ module API
       return helper.forbidden unless app.su?
 
       users = app.assigned_users
-      STDERR.print users.to_s
       return helper.forbidden if users.nil?
 
       report_id = helper.params['report']
@@ -53,7 +52,7 @@ module API
           zip(entry+e, zos, uid)
         end
       else
-        zos.put_next_entry(uid + entry.to_s)
+        zos.put_next_entry(uid + entry.to_s.force_encoding("utf-8"))
         zos.write(entry.read)
       end
     end

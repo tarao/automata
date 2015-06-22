@@ -50,7 +50,7 @@ module API
           zip(entry+e, zos)
         end
       else
-        zos.put_next_entry(entry.to_s)
+        zos.put_next_entry(entry.to_s.force_encoding("utf-8"))
         zos.write(entry.read)
       end
     end
