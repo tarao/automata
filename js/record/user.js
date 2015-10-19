@@ -43,6 +43,8 @@ var User = React.createClass({
                 <SummaryList report={report}
                              admin={this.props.admin}
                              scheme={this.props.scheme}
+                             scores={this.props.scores}
+                             reports={this.props.reports}
                              users={[user]}
                              updateStatus={this.props.updateStatus}/>
                 <div className="status_window">
@@ -55,8 +57,10 @@ var User = React.createClass({
                               report={report}
                               admin={this.props.admin}
                               interact={this.props.interact}
+                              login={user.login}
                               loginUser={this.props.loginUser}
-                              updateNews={_.partial(this.props.updateNews, token, report)}/>
+                              updateNews={_.partial(this.props.updateNews, token, report)}
+                              updateScore={this.props.updateScore}/>
                 </div>
                 <NavButton name={user.name}/>
                 </div>

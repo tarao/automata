@@ -7,6 +7,7 @@ var AnswerView = require('./answer_view.js');
 var ResultView = require('./result_view.js');
 var FileView = require('./file_view.js');
 var CommentView = require('./comment_view.js');
+var ScoreView = require('./score_view.js');
 var InteractView = require('./interact_view.js');
 
 var tabs = [
@@ -15,6 +16,7 @@ var tabs = [
     { name: 'result',   path: 'result/',   label: 'テスト結果',   handler: ResultView },
     { name: 'file',     path: 'file/*',    label: 'ファイル一覧', handler: FileView },
     { name: 'comment',  path: 'comment/',  label: 'コメント',     handler: CommentView },
+    { name: 'score',    path: 'score/',    label: '採点',  handler: ScoreView },
     { name: 'interact', path: 'interact/', label: '対話',         handler: InteractView }
 ];
 

@@ -52,6 +52,42 @@ var Record = React.createClass({
         });
     },
 
+    updateScores: function(scheme) {
+        var params = scheme.map(function(report) {
+            return {
+                api: 'scheme',
+                data: { id: report.id, type: report.type, exercise: true }
+            };
+        });
+
+        api.get.apply(null, params).done(function() {
+            var reports = _.toArray(arguments).map(function(r) { return r[0]; });
+
+            this.setState({
+                reports: reports
+            });
+        }.bind(this));
+
+        api.get({
+            api: 'score',
+            data: { action: 'tabulate' }
+        }).done(function (scores) {
+            this.setState({
+                scores: scores
+            });
+        }.bind(this));
+    },
+
+    updateScore: function(login, report, score) {
+      if(_.isUndefined(this.state.scores))
+        return;
+      
+      this.state.scores[login][report] = score;
+      this.setState({
+        scores: this.state.scores
+      });
+    },
+
     queryComments: function(tokens) {
         api.get({ api: 'comment', data: { action: 'list_news', user: tokens } })
            .done(function(comments) {
@@ -120,6 +156,8 @@ var Record = React.createClass({
                     comments: {},
                     filtered: filtered
                 });
+                if (master.admin)
+                  this.updateScores(scheme);
             }
             this.queryComments(users.map(_.partial(_.result, _, 'token')));
             if (!master.admin && this.getPath() === '/') {
@@ -201,9 +239,12 @@ var Record = React.createClass({
                               interact={this.state.interact}
                               scheme={this.state.scheme}
                               users={users}
+                              scores={this.state.scores}
+                              reports={this.state.reports}
                               updateStatus={this.updateStatus}
                               loginUser={this.state.user}
                               updateNews={this.updateNews}
+                        updateScore={this.updateScore}
                               comments={this.state.comments}/>
             </div>
         );

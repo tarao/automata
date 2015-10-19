@@ -4,6 +4,7 @@ var Link = Router.Link;
 var api = require('../api');
 var Loading = require('../loading');
 var Status = require('./status');
+var ScoreStatus = require('./score_status');
 
 module.exports = React.createClass({
     mixins: [Router.Navigation, Loading.Mixin],
@@ -168,6 +169,7 @@ module.exports = React.createClass({
                 <td {...props}>
                     <div className="notify">{unreads}{stars}{all_comments}</div>
                     {content}{edit}
+                    <ScoreStatus score={this.props.score} exercises={this.props.exercises}/>
                 </td>
         );
     }

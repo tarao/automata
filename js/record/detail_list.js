@@ -58,12 +58,19 @@ var ReportList = React.createClass({
                         var comment = _.chain(user)
                             .result('report').result(this.props.scheme.id)
                             .result('comment', {}).value();
+                        var score = _.isUndefined(this.props.scores)?'':this.props.scores[user.login][this.props.scheme.id];
+                        var report = _.isUndefined(this.props.reports)
+                                   ? {}
+                                   : this.props.reports.filter(function(r) { return r.id == this.props.scheme.id; }.bind(this))[0];
+                        var exercises = _.isUndefined(report)?{}:report.exercise;
                         return (
                                 <StatusCell user={user}
                                             report={this.props.scheme.id}
                                             admin={this.props.admin}
                                             updateStatus={this.props.updateStatus}
-                                            comment={comment}/>
+                                            comment={comment}
+                                            score={score}
+                                            exercises={exercises}/>
                         );
                     } else if (/^optional/.test(r.field)) {
                         var answered = ['report', this.props.scheme.id, 'optional'].reduce(function(r, k) {
@@ -135,7 +142,9 @@ var DetailList = React.createClass({
                     <ReportList scheme={s}
                                 admin={this.props.admin}
                                 updateStatus={this.props.updateStatus}
-                                users={this.props.users}/>
+                                users={this.props.users}
+                                scores={this.props.scores}
+                                reports={this.props.reports}/>
             );
         }.bind(this));
         return (
