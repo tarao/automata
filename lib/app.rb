@@ -33,6 +33,14 @@ class App
     return !user.nil? && conf[:master, :su].include?(user.real_login)
   end
 
+  def assigned_users
+    return nil unless su?
+
+    users = User.all_users
+    users.reject!{|u| u.assigned != user.real_login}
+    return users
+  end
+
   # Return users visible from a remote user
   # @return [Array<User>] users visible from a remote user or nil if a remote
   # user is not set
