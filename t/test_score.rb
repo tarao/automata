@@ -7,15 +7,15 @@ class ScoreTest < Test::Unit::TestCase
   def setup()
     @path = "./"
 
-    @user = "user"
-    @user2 = "church"
+    @scorer = "scorer"
+    @scorer2 = "church"
 
     @scores = {}
-    @scores[@user] = Score.new(@user, @path)
-    @scores[@user2] = Score.new(@user2, @path)
+    @scores[@scorer] = Score.new(@scorer, @path)
+    @scores[@scorer2] = Score.new(@scorer2, @path)
 
-    @user_content = "{\"lambda calculus\" => true, \"turing machine\" => false }"
-    @user2_content = "{\"andb\" => true, \"blt_nat\" => true }"
+    @scorer_content = "{\"lambda calculus\" => true, \"turing machine\" => false }"
+    @scorer2_content = "{\"andb\" => true, \"blt_nat\" => true }"
   end
 
   def teardown()
@@ -24,24 +24,24 @@ class ScoreTest < Test::Unit::TestCase
   end
 
   def add_scores()
-    @scores[@user].add(@user_content)
-    @scores[@user2].add(@user2_content)
+    @scores[@scorer].add(@scorer_content)
+    @scores[@scorer2].add(@scorer2_content)
   end
 
   def test_db_index()
-    assert_not_nil(@scores[@user].db_index)
+    assert_not_nil(@scores[@scorer].db_index)
   end
 
   def test_retrival()
     add_scores()
 
-    ls =  [ [@user, @user_content ], [@user2, @user2_content] ]
+    ls =  [ [@scorer, @scorer_content ], [@scorer2, @scorer2_content] ]
     ls.length.times {|i|
       u = ls[i][0]
       c = ls[i][1]
 
-      ret = @scores[u].retrieve('raw')[i]
-      assert_equal(u, ret['user'])
+      ret = @scores[u].retrieve()[i]
+      assert_equal(u, ret['scorer'])
       assert_equal(c + "\n", ret['content'])
     }
   end

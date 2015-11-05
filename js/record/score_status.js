@@ -3,7 +3,7 @@ var React = require('react');
 
 module.exports = React.createClass({
     render: function() {
-        if (this.props.score==='')
+        if (this.props.score === '')
           return <div>未採点</div>;
 
         var submissions = JSON.parse(this.props.score.replace(/=>/g, ': '));
@@ -24,16 +24,16 @@ module.exports = React.createClass({
                             var info = a[1];
                             return _.isUndefined(info.level) ? 0 : info.level;
                          }).max().value();
-        var levels = (_.isUndefined(max_level) || max_level == 0)
+        var levels = (_.isUndefined(max_level) || max_level === 0)
                    ? [ <div /> ]
                    : new Array(max_level);
         for (var i = 1; i <= max_level; i++) {
           var level_i_e = e.filter(function(a) {
             var info = a[1];
-            return info.level ==  i;
+            return info.level ===  i;
           });
 
-          if (level_i_e.length == 0) {
+          if (level_i_e.length === 0) {
             length[i-1] = <div />;
           } else {
             var accept_cnt_level_i = level_i_e.filter(function(a) {
@@ -53,7 +53,7 @@ module.exports = React.createClass({
           var name = a[0];
           return submissions[name];
         }).length;
-        var other = other_e.length == 0
+        var other = other_e.length === 0
                   ? <div />
                   : <div>その他 {accept_cnt_other}/{other_e.length}</div>;
 

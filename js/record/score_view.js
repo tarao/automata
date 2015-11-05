@@ -25,7 +25,6 @@ var ScoreForm = React.createClass({
     setTemplateText: function() {
       var data = {
         action: 'template',
-        user: this.props.token,
         report: this.props.report,
       };
 
@@ -82,7 +81,7 @@ var ScoreForm = React.createClass({
       var content = JSON.stringify(this.state.score_hash).replace(/:/g, '=> ');
       var data = {
         action: 'post',
-        user: this.props.token,
+        scoree: this.props.token,
         report: this.props.report,
         content: content
       };
@@ -133,7 +132,7 @@ var ScoreView = React.createClass({
         api.get({
             api: 'score',
             data: {
-                user: this.props.token,
+                scoree: this.props.token,
                 report: this.props.report,
                 action: 'get'
             }
@@ -161,9 +160,11 @@ var ScoreView = React.createClass({
           last_id = scores[scores.length-1].id;
         }
         scores = scores.map(function(score) {
+            console.log('SCORE VIEW');
+            console.log(score);
             var div_meta = (
               <div className="meta">
-                <p className="author">{score.user_name}</p>
+                <p className="author">{score.scorer_name}</p>
                 <p className="date">{score.timestamp}</p>
               </div>
             );
