@@ -64,12 +64,14 @@ var ReportList = React.createClass({
                                             report={this.props.scheme.id}
                                             admin={this.props.admin}
                                             updateStatus={this.props.updateStatus}
-                                            comment={comment}
                                             score={this.props.scores[user.login][this.props.scheme.id]}
-                                            exercises={this.props.reports[s.id]['exercise']}/>
+                                            exercises={this.props.reports[s.id]['exercise']}
+                                            changeDelayStatus={this.props.changeDelayStatus}
+                                            delayOptions={this.props.delayOptions}
+                                            comment={comment}/>
                         );
                     } else if (/^optional/.test(r.field)) {
-                        var answered = ['report', this.props.scheme.id, 'optional'].reduce(function(r, k) {
+                        var answered = ['report', this.props.scheme.id, r.field].reduce(function(r, k) {
                             if (typeof r[k] === 'undefined') r[k] = {};
                             return r[k];
                         }, user);
@@ -138,9 +140,11 @@ var DetailList = React.createClass({
                     <ReportList scheme={s}
                                 admin={this.props.admin}
                                 updateStatus={this.props.updateStatus}
-                                users={this.props.users}
                                 scores={this.props.scores}
-                                reports={this.props.reports}/>
+                                reports={this.props.reports}
+                                changeDelayStatus={this.props.changeDelayStatus}
+                                delayOptions={this.props.delayOptions}
+                                users={this.props.users}/>
             );
         }.bind(this));
         return (

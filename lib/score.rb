@@ -7,15 +7,16 @@ require_relative 'app'
 require_relative 'comment'
 
 class Score
+  INDEX_FILE = 'index.db'
+
   def initialize(user, path)
     @user = user
     @path = path
     @path = Pathname.new(@path.to_s) unless @path.is_a?(Pathname)
-    @index_file = 'index.db'
   end
 
   def db_index()
-    return Store.new(@path + @index_file)
+    return Store.new(@path + INDEX_FILE)
   end
 
   def retrieve(type)

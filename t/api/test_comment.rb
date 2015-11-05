@@ -32,10 +32,10 @@ class CommentTest < Test::Unit::TestCase
     user1 = User.all_users[0]
     user2 = User.all_users[1]
 
-    assert_equal({user1.login => user1.name}, app.user_names_from_logins([user1.login]))
+    assert_equal({user1.login => user1.name}, ::User.user_names_from_logins([user1.login]))
     assert_equal({user1.login => user1.name, user2.login => user2.name},
-                 app.user_names_from_logins([user1.login, user2.login]))
+                 ::User.user_names_from_logins([user1.login, user2.login]))
     assert_equal({user1.login => user1.name},
-                 app.user_names_from_logins([user1.login, 'no-existing-user-id']))
+                 ::User.user_names_from_logins([user1.login, 'no-existing-user-id']))
   end
 end

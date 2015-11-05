@@ -41,6 +41,16 @@ var Record = React.createClass({
         });
     },
 
+    changeDelayStatus: function(token, report, delay) {
+        var users = this.state.users;
+        users.forEach(function(user) {
+            if (user.token === token) {
+                user.report[report].delay = delay;
+            }
+        });
+        this.setState({ users: users });
+    },
+
     updateNews: function(token, report, news) {
         ['comments', report, token].reduce(function(r, k) {
             if (!_.has(r, k)) r[k] = {};
@@ -124,6 +134,7 @@ var Record = React.createClass({
                     user: true,
                     admin: true,
                     token: true,
+                    delay_options: true,
                     reload: true,
                     interact: true
                 }
@@ -156,14 +167,16 @@ var Record = React.createClass({
                     admin: master.admin,
                     reload: master.reload,
                     interact: master.interact,
+                    delayOptions: master.delay_options,
                     scheme: scheme,
                     users: users,
                     comments: {},
                     filtered: filtered
                 });
             }
-            if (master.admin)
+            if (master.admin) {
               this.updateScores(scheme);
+            }
             this.queryComments(users.map(_.partial(_.result, _, 'token')));
             if (!master.admin && this.getPath() === '/') {
                 var report = $.cookie('default-report');
@@ -268,6 +281,8 @@ var Record = React.createClass({
                               scores={scores}
                               reports={reports}
                               updateStatus={this.updateStatus}
+                              changeDelayStatus={this.changeDelayStatus}
+                              delayOptions={this.state.delayOptions}
                               loginUser={this.state.user}
                               updateNews={this.updateNews}
                               updateScore={this.updateScore}
