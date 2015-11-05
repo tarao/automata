@@ -15,15 +15,16 @@ module API
   #   score action=template user[]=<login> report=<report>
   #   score action=tabulate
   # Actions:
-  #   get       [type=raw|html] [id=<score-id>]
+  #   get       [type=raw|html]
   #             スコアをrubyのハッシュデータを文字列化したものとして取得
-  #   post      message=<content>
+  #             typeのデフォルト値はhtml
+  #   post      content=<content>
   #             スコアをrubyのハッシュデータを文字列化したものとして送信
   #   template
   #             各課題ごとに初期値が全てfalseのスコアを
   #             rubyのハッシュデータを文字列化したものとして取得
   #   tabulate
-  #             「「課題毎の結果のハッシュにしたもの」を各課題ごとにハッシュにしたもの」
+  #             「「課題(Exercise)毎の結果のハッシュにしたもの」を各課題(Report)ごとにハッシュにしたもの」
   #             をユーザ毎にハッシュにして結果を返す
   #             { user_0 => { report0 => { Ex0 => result, Ex1 => result, ... }, report1 => { ... }, ... },
   #               user_1 => { report0 => { Ex0 => result, Ex1 => result, ... }, report1 => { ... }, ... },
@@ -31,18 +32,13 @@ module API
   #               user_n => ... }
   class Score
     def get_scores(app, report_ids, users)
-      config = {
-        'max' => 256,
-        'size_limit' => 1024 * 16,
-      }.merge(app.conf[:master, :score] || {})
-
       return Hash[*report_ids.map do |id|
                     s = users.map do |u|
                       dir = SysPath.score_dir(id, u)
                       FileUtils.mkdir_p(dir) unless dir.exist?
                       { 
                         user:    u,
-                        score: ::Score.new(app.user.login, dir, config)
+                        score: ::Score.new(app.user.login, dir)
                       }
                     end
                     [id, s]
@@ -62,59 +58,42 @@ module API
 
       if action != 'tabulate' then
         # user must be specified
-        users = helper.params['user']
-        return helper.bad_request if users.nil? || users.empty?
-  
-        # user must be an array
-        unless users.is_a?(Array)
-          return helper.bad_request('user must be provided as user[]=<login>')
-        end
-  
+        user = helper.params['user']
+        return helper.bad_request unless user
+
         # resolve real login name in case user id is a token
-        users = users.map { |u| app.user_from_token_or_login(u) }
-        users.compact!
-        return helper.bad_request if users.empty?
-  
+        user = app.user_from_token_or_login(user)
+        return helper.bad_request unless user
+
         # report ID must be specified
         report_id = helper.params['report']
         return helper.bad_request unless report_id
-  
-        # check the number of specified users
-        if users.length != 1
-          return helper.bad_request
-        end
+
+        scores = get_scores(app, [report_id], [user])
       end
 
       begin
-        if action != 'tabulate' then
-          report_ids = report_id ? [report_id] : app.conf[:scheme, :scheme].map{|r| r['id']}
-          scores = get_scores(app, report_ids, users)
-        end
-
         case action
         when 'get'
-          type    = helper.params['type']
-          id      = helper.params['id']
-          args    = { type: type, id: id }
-          
-          content = scores[report_id][0][:score].retrieve(args)
+          type    = helper.params['type'] || :html
+          content = scores[report_id][0][:score].retrieve(type)
 
           # Connect user names by login ids
-          user_names = API::Comment.new.user_names_from_logins(content.map { |entry| entry['user'] })
+          user_names = ::User.user_names_from_logins(content.map { |entry| entry['user'] })
           content = content.map { |entry| entry.merge(user_name: user_names[entry['user']]) }
 
           return helper.json_response(content)
         when 'post'
           # get ruby hash data as a string
-          content = helper.params['message']
+          content = helper.params['content']
 
-          scores[report_id][0][:score].add(content: content)
+          scores[report_id][0][:score].add(content)
           return helper.ok('done')
         when 'template'
           scheme = app.conf[:scheme]
 
           exercise_names = scheme['report'][report_id].keys
-          score_template = Hash.new(false)
+          score_template = Hash.new()
           exercise_names.each { |key| score_template[key] = false }
 
           # respond ruby hash data as a string
@@ -128,11 +107,13 @@ module API
           content = Hash[*users.map do |u|
             is = Hash[*report_ids.map do |id|
               ss = scores[id].select{ |s| s[:user].login() == u.login() }
-              return helper.bad_request if ss.length != 1
+              if ss.length != 1 then
+                app.logger.fatal('There are no score data.')
+                return helper.bad_request
+              end
               score = ss[0]
 
-              args = { type: 'raw', id: id }
-              score_history = score[:score].retrieve(args)
+              score_history = score[:score].retrieve('raw')
               last_score = score_history.length > 0 ? score_history.last['content'] : ""
               [ id, last_score ]
             end.flatten(1)]

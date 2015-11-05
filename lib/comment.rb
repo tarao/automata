@@ -186,6 +186,29 @@ class Comment
     end
   end
 
+  def load_content(type, id)
+    if id.is_a?(Array)
+      loader = proc{|e| load_content(type, e['id'])}
+      return map_entries(id, 'content' => loader)
+    end
+
+    file = content_file(type, id)
+    return unless file.exist?
+    File.open(file, 'r:utf-8') {|f| f.read }
+  end
+
+  def write_content(id, content)
+    contents = {
+      raw:  content,
+      html: Renderer.create.render(content)
+    }
+    contents.each do |type, content|
+      open(content_file(type, id), 'w') do |io|
+        io.puts(content)
+      end
+    end
+  end
+
   private
 
   def filter_forbidden(entries)
@@ -200,31 +223,8 @@ class Comment
     end
   end
 
-  def load_content(type, id)
-    if id.is_a?(Array)
-      loader = proc{|e| load_content(type, e['id'])}
-      return map_entries(id, 'content' => loader)
-    end
-
-    file = content_file(type, id)
-    return unless file.exist?
-    File.open(file, 'r:utf-8') {|f| f.read }
-  end
-
   def content_file(type, id)
     return @path + [ id.to_s, type.to_s ].join('.')
-  end
-
-  def write_content(id, content)
-    contents = {
-      raw:  content,
-      html: Renderer.create.render(content)
-    }
-    contents.each do |type, content|
-      open(content_file(type, id), 'w') do |io|
-        io.puts(content)
-      end
-    end
   end
 
   def delete_content(id)

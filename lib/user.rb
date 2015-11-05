@@ -19,6 +19,15 @@ class User
     (self.all_users.select {|u| u.real_login == login})[0]
   end
 
+  # Returns a hash represents relation between login ids and names.
+  # @param [Array<String>] logins an array of logins
+  def self.user_names_from_logins(logins)
+    self.all_users.inject(Hash.new) do |r, u|
+      login = logins.find {|l| u.real_login == l}
+      login.nil? ? r : r.merge({ login => u.name })
+    end
+  end
+
   # Add a user to the database.
   # @param [Hash{String => String}] info contains name, ruby, login, email, and
   # assigned

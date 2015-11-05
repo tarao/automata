@@ -10,6 +10,7 @@ require 'lib/api/admin_user'
 require 'lib/api/admin_interact'
 require 'lib/api/browse'
 require 'lib/api/comment'
+require 'lib/api/score'
 require 'lib/api/master'
 require 'lib/api/post'
 require 'lib/api/scheme'
@@ -95,6 +96,7 @@ map base_path do
     { pattern: '/api/admin_interact.cgi', controller: API::AdminInteract.new },
     { pattern: '/api/browse.cgi', controller: API::Browse.new },
     { pattern: '/api/comment.cgi', controller: API::Comment.new },
+    { pattern: '/api/score.cgi', controller: API::Score.new },
     { pattern: '/api/master.cgi', controller: API::Master.new },
     { pattern: '/api/post.cgi', controller: API::Post.new },
     { pattern: '/api/scheme.cgi', controller: API::Scheme.new },

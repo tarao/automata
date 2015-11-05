@@ -27,9 +27,7 @@ module.exports = React.createClass({
                     var comment = _.chain(user)
                         .result('report').result(s.id).result('comment', {})
                         .value();
-                    var score = _.isUndefined(this.props.scores)?'':this.props.scores[user.login][s.id];
-                    var report = _.isUndefined(this.props.reports)?{}:this.props.reports.filter(function(r) { return r.id == s.id; })[0];
-                    var exercises = _.isUndefined(report)?{}:report.exercise;
+
                     return (
                             <StatusCell user={user}
                                         report={s.id}
@@ -37,8 +35,8 @@ module.exports = React.createClass({
                                         admin={this.props.admin}
                                         updateStatus={this.props.updateStatus}
                                         comment={comment}
-                                        score={score}
-                                        exercises={exercises}
+                                        score={this.props.scores[user.login][s.id]}
+                                        exercises={this.props.reports[s.id]['exercise']}
                                         isSelected={this.props.report === s.id}/>
                     );
                 }.bind(this));

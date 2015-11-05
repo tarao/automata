@@ -1,7 +1,7 @@
 require 'test/unit'
 
 require 'store'
-require 'comment'
+require 'score'
 
 class CommentTest < Test::Unit::TestCase
   def setup()

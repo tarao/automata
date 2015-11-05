@@ -63,18 +63,22 @@ var Record = React.createClass({
         api.get.apply(null, params).done(function() {
             var reports = _.toArray(arguments).map(function(r) { return r[0]; });
 
-            this.setState({
+            if (this.isMounted()) {
+              this.setState({
                 reports: reports
-            });
+              });
+            }
         }.bind(this));
 
         api.get({
             api: 'score',
             data: { action: 'tabulate' }
         }).done(function (scores) {
-            this.setState({
+            if (this.isMounted()) {
+              this.setState({
                 scores: scores
-            });
+              });
+            }
         }.bind(this));
     },
 
@@ -82,9 +86,10 @@ var Record = React.createClass({
       if(_.isUndefined(this.state.scores))
         return;
       
-      this.state.scores[login][report] = score;
+      var scores = _.cloneDeep(this.state.scores);
+      scores[login][report] = score;
       this.setState({
-        scores: this.state.scores
+        scores: scores
       });
     },
 
@@ -156,9 +161,9 @@ var Record = React.createClass({
                     comments: {},
                     filtered: filtered
                 });
-                if (master.admin)
-                  this.updateScores(scheme);
             }
+            if (master.admin)
+              this.updateScores(scheme);
             this.queryComments(users.map(_.partial(_.result, _, 'token')));
             if (!master.admin && this.getPath() === '/') {
                 var report = $.cookie('default-report');
@@ -219,6 +224,26 @@ var Record = React.createClass({
             });
         }, this);
 
+        var scores = this.state.users.reduce(function(uhash, u) {
+          uhash[u.login] = this.state.scheme.reduce(function(shash, s) {
+            shash[s.id] = _.get(this.state.scores, [u.login, s.id], '');
+            return shash;
+          }.bind(this), {});
+          return uhash;
+        }.bind(this), {});
+
+        var reports = this.state.scheme.reduce(function(rhash, s) {
+          var d = _.isUndefined(this.state.reports)
+                ? {}
+                : this.state.reports.find(function(r) {
+                    return r.id === s.id;
+                  });
+          var e = _.get(d, 'exercise', {});
+          d['exercise'] = e;
+          rhash[s.id] = d;
+          return rhash;
+        }.bind(this), {})
+
         return (
             <div>
                 <div id="view_switch">
@@ -235,16 +260,17 @@ var Record = React.createClass({
                         <li><Link to="summary" id="sw_view_summary">一覧</Link></li>
                     </ul>
                 </div>
+
                 <RouteHandler admin={this.state.admin}
                               interact={this.state.interact}
                               scheme={this.state.scheme}
                               users={users}
-                              scores={this.state.scores}
-                              reports={this.state.reports}
+                              scores={scores}
+                              reports={reports}
                               updateStatus={this.updateStatus}
                               loginUser={this.state.user}
                               updateNews={this.updateNews}
-                        updateScore={this.updateScore}
+                              updateScore={this.updateScore}
                               comments={this.state.comments}/>
             </div>
         );

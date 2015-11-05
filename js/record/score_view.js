@@ -19,17 +19,17 @@ var ScoreForm = React.createClass({
     },
 
     componentDidMount: function() {
-      this.getTemplateText();
+      this.setTemplateText();
     },
 
-    getTemplateText: function() {
+    setTemplateText: function() {
       var data = {
         action: 'template',
-        user: [this.props.token],
+        user: this.props.token,
         report: this.props.report,
       };
 
-      api.post({
+      api.get({
         api: 'score',
         data: data
       }).done(function(template) {
@@ -49,7 +49,7 @@ var ScoreForm = React.createClass({
         data: _.assign({ type: 'status' }, data)
       }).done(function(u) {
         if (_.isUndefined(u[0].report)) {
-          alert('There is no submission.')
+          alert('There are no submissions.')
           return;
         }
 
@@ -63,35 +63,36 @@ var ScoreForm = React.createClass({
             api: 'test_result',
             data: data
           }).done(function(result) {
+            var score_hash = _.cloneDeep(this.state.score_hash);
             result.detail.forEach(function(d) {
-              this.state.score_hash[d.ex] = (d.result == 'OK');
+              score_hash[d.ex] = (d.result === 'OK');
             }.bind(this));
             this.setState({
-              score_hash: this.state.score_hash
+              score_hash: score_hash
             });
           }.bind(this));
           break;
         default:
-          alert('There is no result. Status: \'' + status + '\'');
+          alert('There are no results. Status: \'' + status + '\'');
         }
       }.bind(this));
     },
 
     submitScore: function() {
-      var message = JSON.stringify(this.state.score_hash).replace(/:/g, '=> ');
+      var content = JSON.stringify(this.state.score_hash).replace(/:/g, '=> ');
       var data = {
         action: 'post',
-        user: [this.props.token],
+        user: this.props.token,
         report: this.props.report,
-        message: message
+        content: content
       };
 
       api.post({
         api: 'score',
         data: data
       }).done(function() {
-        this.props.updateScore(this.props.login, this.props.report, message);
-        this.getTemplateText();
+        this.props.updateScore(this.props.login, this.props.report, content);
+        this.setTemplateText();
         this.props.reload();
       }.bind(this));
     },
@@ -127,13 +128,12 @@ var ScoreForm = React.createClass({
 
 var ScoreView = React.createClass({
     refleshScores: function() {
-        if (!ScoreView.visible(this.props))
-          return;
+        if (!ScoreView.visible(this.props)) return;
 
-        api.post({
+        api.get({
             api: 'score',
             data: {
-                user: [this.props.token],
+                user: this.props.token,
                 report: this.props.report,
                 action: 'get'
             }
@@ -153,17 +153,16 @@ var ScoreView = React.createClass({
     },
 
     render: function() {
-        if (!ScoreView.visible(this.props))
-          return <div />;
+        if (!ScoreView.visible(this.props)) return <div />;
 
         var scores = this.state.scores;
         var last_id;
         if (scores.length > 0) {
-          last_id= scores[scores.length-1].id;
+          last_id = scores[scores.length-1].id;
         }
         scores = scores.map(function(score) {
             var div_meta = (
-              <div className="meta" updateNews={this.props.updateNews}>
+              <div className="meta">
                 <p className="author">{score.user_name}</p>
                 <p className="date">{score.timestamp}</p>
               </div>
@@ -176,7 +175,7 @@ var ScoreView = React.createClass({
               </div>
             );
 
-            if (score.id != last_id) {
+            if (score.id !== last_id) {
               return (
                 <li className="private">{div_meta}{div_form}</li>
               );
@@ -192,7 +191,11 @@ var ScoreView = React.createClass({
                   <ul className="comments">
                     {scores}
                     <li>
-                      <ScoreForm login={this.props.login} token={this.props.token} report={this.props.report} reload={this.refleshScores} updateScore={this.props.updateScore} />
+                      <ScoreForm login={this.props.login}
+                                 token={this.props.token}
+                                 report={this.props.report}
+                                 reload={this.refleshScores}
+                                 updateScore={this.props.updateScore} />
                     </li>
                   </ul>
                 </div>

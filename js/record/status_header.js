@@ -16,7 +16,7 @@ var tabs = [
     { name: 'result',   path: 'result/',   label: 'テスト結果',   handler: ResultView },
     { name: 'file',     path: 'file/*',    label: 'ファイル一覧', handler: FileView },
     { name: 'comment',  path: 'comment/',  label: 'コメント',     handler: CommentView },
-    { name: 'score',    path: 'score/',    label: '採点',  handler: ScoreView },
+    { name: 'score',    path: 'score/',    label: '採点',         handler: ScoreView },
     { name: 'interact', path: 'interact/', label: '対話',         handler: InteractView }
 ];
 
