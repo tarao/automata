@@ -93,8 +93,9 @@ var Record = React.createClass({
     },
 
     updateScore: function(login, report, score) {
-      if(_.isUndefined(this.state.scores))
+      if(_.isUndefined(this.state.scores)) {
         return;
+      }
       
       var scores = _.cloneDeep(this.state.scores);
       scores[login][report] = score;

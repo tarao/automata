@@ -33,7 +33,7 @@ var ScoreForm = React.createClass({
         data: data
       }).done(function(template) {
         this.setState({
-          score_hash: JSON.parse(template.replace(/=>/g, ': '))
+          score_hash: template
         });
       }.bind(this));
     },
@@ -78,7 +78,7 @@ var ScoreForm = React.createClass({
     },
 
     submitScore: function() {
-      var content = JSON.stringify(this.state.score_hash).replace(/:/g, '=> ');
+      var content = JSON.stringify(this.state.score_hash);
       var data = {
         action: 'post',
         scoree: this.props.token,
@@ -88,7 +88,9 @@ var ScoreForm = React.createClass({
 
       api.post({
         api: 'score',
-        data: data
+        data: data,
+        contentType: 'application/JSON',
+        dataType: 'JSON'
       }).done(function() {
         this.props.updateScore(this.props.login, this.props.report, content);
         this.setTemplateText();
@@ -160,8 +162,6 @@ var ScoreView = React.createClass({
           last_id = scores[scores.length-1].id;
         }
         scores = scores.map(function(score) {
-            console.log('SCORE VIEW');
-            console.log(score);
             var div_meta = (
               <div className="meta">
                 <p className="author">{score.scorer_name}</p>

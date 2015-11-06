@@ -3,8 +3,9 @@ var React = require('react');
 
 module.exports = React.createClass({
     render: function() {
-        if (this.props.score === '')
+        if (this.props.score === '') {
           return <div>未採点</div>;
+        }
 
         var submissions = JSON.parse(this.props.score.replace(/=>/g, ': '));
         var e = this.props.exercises;
@@ -18,8 +19,14 @@ module.exports = React.createClass({
           return submissions[name];
         }).length;
         var required = <div>必修: {accept_cnt_required}/{required_e.length}</div>
-        
-        var max_level = _.chain(e)
+
+        var star_e = e.filter(function (a) {
+          var info = a[1];
+
+          // Discard a exercise with "required" in order not to double count
+          return !info.required;
+        });
+        var max_level = _.chain(star_e)
                          .map(function (a) {
                             var info = a[1];
                             return _.isUndefined(info.level) ? 0 : info.level;
@@ -28,13 +35,13 @@ module.exports = React.createClass({
                    ? [ <div /> ]
                    : new Array(max_level);
         for (var i = 1; i <= max_level; i++) {
-          var level_i_e = e.filter(function(a) {
+          var level_i_e = star_e.filter(function(a) {
             var info = a[1];
-            return info.level ===  i;
+            return info.level === i;
           });
 
           if (level_i_e.length === 0) {
-            length[i-1] = <div />;
+            levels[i-1] = <div />;
           } else {
             var accept_cnt_level_i = level_i_e.filter(function(a) {
               var name = a[0];

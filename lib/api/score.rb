@@ -15,12 +15,12 @@ module API
   #   score action=template report=<report>
   #   score action=tabulate
   # Actions:
-  #   get       スコアをrubyのハッシュデータを文字列化したものとして取得
+  #   get       スコアをrubyのハッシュデータとして取得
   #   post      content=<content>
-  #             スコアをrubyのハッシュデータを文字列化したものとして送信
+  #             スコアをrubyのハッシュデータとして送信
   #   template
   #             各課題ごとに初期値が全てfalseのスコアを
-  #             rubyのハッシュデータを文字列化したものとして取得
+  #             rubyのハッシュデータとして取得
   #             { Ex_0 => false, ..., Ex_n => false }
   #   tabulate
   #             「「課題(Exercise)毎の結果のハッシュにしたもの」を各課題(Report)ごとにハッシュにしたもの」
@@ -84,10 +84,9 @@ module API
 
           return helper.json_response(content)
         when 'post'
-          # get ruby hash data as a string
           content = helper.params['content']
-
           scores[report_id][0][:score].add(content)
+
           return helper.ok('done')
         when 'template'
           scheme = app.conf[:scheme]
@@ -96,8 +95,7 @@ module API
           score_template = Hash.new()
           exercise_names.each { |key| score_template[key] = false }
 
-          # respond ruby hash data as a string
-          return helper.json_response(score_template.to_s)
+          return helper.json_response(score_template)
         when 'tabulate'
           scorees = app.visible_users
           report_ids = app.conf[:scheme]['scheme'].map { |h| h['id'] }
