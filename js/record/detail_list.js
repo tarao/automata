@@ -58,11 +58,14 @@ var ReportList = React.createClass({
                         var comment = _.chain(user)
                             .result('report').result(this.props.scheme.id)
                             .result('comment', {}).value();
+
                         return (
                                 <StatusCell user={user}
                                             report={this.props.scheme.id}
                                             admin={this.props.admin}
                                             updateStatus={this.props.updateStatus}
+                                            score={this.props.scores[user.login][this.props.scheme.id]}
+                                            exercises={this.props.reports[s.id]['exercise']}
                                             changeDelayStatus={this.props.changeDelayStatus}
                                             delayOptions={this.props.delayOptions}
                                             comment={comment}/>
@@ -137,6 +140,8 @@ var DetailList = React.createClass({
                     <ReportList scheme={s}
                                 admin={this.props.admin}
                                 updateStatus={this.props.updateStatus}
+                                scores={this.props.scores}
+                                reports={this.props.reports}
                                 changeDelayStatus={this.props.changeDelayStatus}
                                 delayOptions={this.props.delayOptions}
                                 users={this.props.users}/>

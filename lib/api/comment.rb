@@ -130,7 +130,7 @@ module API
           args    = { type: type, id: id, offset: offset, limit: limit }
           content = comments[report_id][0][:comment].retrieve(args)
           # Get user names
-          user_names = user_names_from_logins(content.map { |entry| entry['user'] })
+          user_names = ::User.user_names_from_logins(content.map { |entry| entry['user'] })
           starList = comments[report_id][0][:comment].stars()
           content = content.map do |entry|
             entry.merge(user_name: user_names[entry['user']],
@@ -215,15 +215,6 @@ module API
       rescue => e
         app.logger.error(e.to_s)
         return helper.internal_server_error([e.to_s, e.backtrace].join("\n"))
-      end
-    end
-
-    # Returns a hash represents relation between login ids and names.
-    # @param [Array<String>] logins an array of logins
-    def user_names_from_logins(logins)
-      ::User.all_users.inject(Hash.new) do |r, u|
-        login = logins.find {|l| u.real_login == l}
-        login.nil? ? r : r.merge({ login => u.name })
       end
     end
   end

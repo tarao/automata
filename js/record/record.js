@@ -62,6 +62,48 @@ var Record = React.createClass({
         });
     },
 
+    updateScores: function(scheme) {
+        var params = scheme.map(function(report) {
+            return {
+                api: 'scheme',
+                data: { id: report.id, type: report.type, exercise: true }
+            };
+        });
+
+        api.get.apply(null, params).done(function() {
+            var reports = _.toArray(arguments).map(function(r) { return r[0]; });
+
+            if (this.isMounted()) {
+              this.setState({
+                reports: reports
+              });
+            }
+        }.bind(this));
+
+        api.get({
+            api: 'score',
+            data: { action: 'tabulate' }
+        }).done(function (scores) {
+            if (this.isMounted()) {
+              this.setState({
+                scores: scores
+              });
+            }
+        }.bind(this));
+    },
+
+    updateScore: function(login, report, score) {
+      if(_.isUndefined(this.state.scores)) {
+        return;
+      }
+      
+      var scores = _.cloneDeep(this.state.scores);
+      scores[login][report] = score;
+      this.setState({
+        scores: scores
+      });
+    },
+
     queryComments: function(tokens) {
         api.get({ api: 'comment', data: { action: 'list_news', user: tokens } })
            .done(function(comments) {
@@ -133,6 +175,9 @@ var Record = React.createClass({
                     filtered: filtered
                 });
             }
+            if (master.admin) {
+              this.updateScores(scheme);
+            }
             this.queryComments(users.map(_.partial(_.result, _, 'token')));
             if (!master.admin && this.getPath() === '/') {
                 var report = $.cookie('default-report');
@@ -193,6 +238,26 @@ var Record = React.createClass({
             });
         }, this);
 
+        var scores = this.state.users.reduce(function(uhash, u) {
+          uhash[u.login] = this.state.scheme.reduce(function(shash, s) {
+            shash[s.id] = _.get(this.state.scores, [u.login, s.id], '');
+            return shash;
+          }.bind(this), {});
+          return uhash;
+        }.bind(this), {});
+
+        var reports = this.state.scheme.reduce(function(rhash, s) {
+          var d = _.isUndefined(this.state.reports)
+                ? {}
+                : this.state.reports.find(function(r) {
+                    return r.id === s.id;
+                  });
+          var e = _.get(d, 'exercise', {});
+          d['exercise'] = e;
+          rhash[s.id] = d;
+          return rhash;
+        }.bind(this), {})
+
         return (
             <div>
                 <div id="view_switch">
@@ -209,15 +274,19 @@ var Record = React.createClass({
                         <li><Link to="summary" id="sw_view_summary">一覧</Link></li>
                     </ul>
                 </div>
+
                 <RouteHandler admin={this.state.admin}
                               interact={this.state.interact}
                               scheme={this.state.scheme}
                               users={users}
+                              scores={scores}
+                              reports={reports}
                               updateStatus={this.updateStatus}
                               changeDelayStatus={this.changeDelayStatus}
                               delayOptions={this.state.delayOptions}
                               loginUser={this.state.user}
                               updateNews={this.updateNews}
+                              updateScore={this.updateScore}
                               comments={this.state.comments}/>
             </div>
         );

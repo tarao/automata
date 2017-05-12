@@ -56,4 +56,11 @@ module SysPath
   def self.comment_dir(report_id, user)
     user_dir(report_id, user) + 'comment'
   end
+
+  # Returns a path to a score directory where scores are saved
+  # @param [String] report_id report name
+  # @param [String] user user id
+  def self.score_dir(report_id, user)
+    user_dir(report_id, user) + 'score'
+  end
 end

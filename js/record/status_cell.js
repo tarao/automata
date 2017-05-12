@@ -4,6 +4,7 @@ var Link = Router.Link;
 var api = require('../api');
 var Loading = require('../loading');
 var Status = require('./status');
+var ScoreStatus = require('./score_status');
 var DelayEditor = require('./delay');
 
 module.exports = React.createClass({
@@ -169,6 +170,7 @@ module.exports = React.createClass({
                 <td {...props}>
                     <div className="notify">{unreads}{stars}{all_comments}</div>
                     {content}{edit}
+                    <ScoreStatus score={this.props.score} exercises={this.props.exercises}/>
                     <DelayEditor user={this.props.user}
                                  report={this.props.report}
                                  changeDelayStatus={this.props.changeDelayStatus}

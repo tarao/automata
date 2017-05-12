@@ -27,6 +27,7 @@ module.exports = React.createClass({
                     var comment = _.chain(user)
                         .result('report').result(s.id).result('comment', {})
                         .value();
+
                     return (
                             <StatusCell user={user}
                                         report={s.id}
@@ -36,6 +37,8 @@ module.exports = React.createClass({
                                         changeDelayStatus={this.props.changeDelayStatus}
                                         delayOptions={this.props.delayOptions}
                                         comment={comment}
+                                        score={this.props.scores[user.login][s.id]}
+                                        exercises={this.props.reports[s.id]['exercise']}
                                         isSelected={this.props.report === s.id}/>
                     );
                 }.bind(this));
