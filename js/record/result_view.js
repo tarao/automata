@@ -5,7 +5,7 @@ var Loading = require('../loading');
 var Status = require('./status');
 
 function isPassed(t) {
-    if (typeof t !== 'string') t = t.result;
+    if (typeof t !== 'string') t = "result" in t ? t.result : "NG";
     return t.match(/^\s*ok\s*/i);
 }
 
